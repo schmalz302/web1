@@ -33,21 +33,31 @@ search_params = {
 response = requests.get(search_api_server, params=search_params)
 json_response = response.json()
 
-organization = json_response["features"][0]
-org_name = organization["properties"]["CompanyMetaData"]["name"]
-org_address = organization["properties"]["CompanyMetaData"]["address"]
-point = organization["geometry"]["coordinates"]
-hours = organization['properties']['CompanyMetaData']['Hours']['text']
-org_point = "{0},{1}".format(point[0], point[1])
+points = []
+organization = json_response["features"]
+for i in range(10):
+    point = organization[i]["geometry"]["coordinates"]
+    org_point = "{0},{1}".format(point[0], point[1])
+    try:
+        a = organization[i]['properties']['CompanyMetaData']['Hours']['Availabilities'][0]['TwentyFourHours']
+        if a:
+            org_point = f"{org_point},pm2gnl"
+    except KeyError:
+        try:
+            a = organization[i]['properties']['CompanyMetaData']['Hours']['Availabilities'][0]['Everyday']
+            if a:
+                org_point = f"{org_point},pm2bll"
+        except KeyError:
+            org_point = f"{org_point},pm2grl"
+        org_point = f"{org_point},pm2grl"
+    points.append(org_point)
+points = '~'.join(points)
 delta = "0.005"
 map_params = {
     "spn": ",".join([delta, delta]),
     "l": "map",
-    "pt": f"{org_point},pm2dgl~{org_point1},pm2dgl",
+    "pt": points,
 }
-org = [float(i) for i in org_point.split(',')]
-org1 = [float(i) for i in org_point1.split(',')]
-a = str(((org1[0] - org[0]) ** 2 + (org1[1] - org[1]) ** 2) ** 0.5 * 111.111)
 map_api_server = "http://static-maps.yandex.ru/1.x/"
 response = requests.get(map_api_server, params=map_params)
 map_file = "map.png"
@@ -56,19 +66,8 @@ with open(map_file, "wb") as file:
 
 pygame.init()
 screen = pygame.display.set_mode((600, 450))
-intro_text = [org_name, org_address, hours, f'Расстояние : {a}км']
 while pygame.event.wait().type != pygame.QUIT:
-    font = pygame.font.Font(None, 25)
-    text_coord = 50
     screen.blit(pygame.image.load(map_file), (0, 0))
-    for line in intro_text:
-        string_rendered = font.render(line, 1, pygame.Color('black'))
-        intro_rect = string_rendered.get_rect()
-        text_coord += 10
-        intro_rect.top = text_coord
-        intro_rect.x = 10
-        text_coord += intro_rect.height
-        screen.blit(string_rendered, intro_rect)
     pygame.display.flip()
 pygame.quit()
 os.remove(map_file)
