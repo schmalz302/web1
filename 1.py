@@ -30,10 +30,11 @@ toponym = json_response["response"]["GeoObjectCollection"][
 toponym_coodrinates = toponym["Point"]["pos"]
 x1, y1 = toponym_coodrinates.split(" ")
 org_point = ",".join([x1, y1])
-
+a = json_response["response"]["GeoObjectCollection"][
+    "featureMember"][0]["GeoObject"]['boundedBy']['Envelope']
 map_params = {
     "ll": org_point,
-    "spn": selection_of_scale(json_response),
+    "spn": selection_of_scale(a),
     "l": "map",
     "pt": f"{org_point},pm2dgl"
   }
